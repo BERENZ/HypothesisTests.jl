@@ -237,14 +237,17 @@ end
 # Under regularity conditions, their asymptotic distributions are all the same (Drost 1989)
 # Chi-squared null approximation works best for lambda near 2/3
 """
-    PowerDivergenceTest(x[, y]; lambda = 1.0, theta0 = ones(length(x))/length(x))
+    PowerDivergenceTest(x[, y]; lambda = 1.0, theta0 = ones(length(x))/length(x), dfadj = 0)
 
 Perform a Power Divergence test.
 
 If `y` is not given and `x` is a matrix with one row or column, or `x` is a vector, then
 a goodness-of-fit test is performed (`x` is treated as a one-dimensional contingency
 table). In this case, the hypothesis tested is whether the population probabilities equal
-those in `theta0`, or are all equal if `theta0` is not given.
+those in `theta0`, or are all equal if `theta0` is not given. `dfadj` is an adjustment for 
+the degrees of freedom for the goodness-of-fit tests.  This argument refers to the number 
+of parameters in the reference distribution (default `dfadj = 0`). This argument should be 
+used along with `theta0` argument.
 
 If `x` is a matrix with at least two rows and columns, it is taken as a two-dimensional
 contingency table. Otherwise, `x` and `y` must be vectors of the same length. The contingency
@@ -284,7 +287,7 @@ Implements: [`pvalue`](@ref), [`confint(::PowerDivergenceTest)`](@ref)
 
   * Agresti, Alan. Categorical Data Analysis, 3rd Edition. Wiley, 2013.
 """
-function PowerDivergenceTest(x::AbstractMatrix{T}; lambda::U=1.0, theta0::Vector{U} = ones(length(x))/length(x)) where {T<:Integer,U<:AbstractFloat}
+function PowerDivergenceTest(x::AbstractMatrix{T}; lambda::U=1.0, theta0::Vector{U} = ones(length(x))/length(x), dfadj::T=0) where {T<:Integer,U<:AbstractFloat}
 
     nrows, ncols = size(x)
     n = sum(x)
@@ -303,7 +306,7 @@ function PowerDivergenceTest(x::AbstractMatrix{T}; lambda::U=1.0, theta0::Vector
         theta0 = xhat / n
         V = Float64[(colsums[j]/n) * (rowsums[i]/n) * (1 - rowsums[i]/n) * (n - colsums[j]) for i in 1:nrows, j in 1:ncols]
     elseif nrows == 1 || ncols == 1
-        df = length(x) - 1
+        df = length(x) - 1 - dfadj
         xhat = reshape(n * theta0, size(x))
         thetahat = x / n
         V = reshape(n .* theta0 .* (1 .- theta0), size(x))
@@ -347,12 +350,12 @@ function PowerDivergenceTest(x::AbstractVector{T}, y::AbstractVector{T}, k::T; l
     PowerDivergenceTest(d, lambda=lambda)
 end
 
-PowerDivergenceTest(x::AbstractVector{T}; lambda::U=1.0, theta0::Vector{U} = ones(length(x))/length(x)) where {T<:Integer,U<:AbstractFloat} =
-    PowerDivergenceTest(reshape(x, length(x), 1), lambda=lambda, theta0=theta0)
+PowerDivergenceTest(x::AbstractVector{T}; lambda::U=1.0, theta0::Vector{U} = ones(length(x))/length(x), dfadj::T=0) where {T<:Integer,U<:AbstractFloat} =
+    PowerDivergenceTest(reshape(x, length(x), 1), lambda=lambda, theta0=theta0, dfadj=dfadj)
 
 #ChisqTest
 """
-    ChisqTest(x[, y][, theta0 = ones(length(x))/length(x)])
+    ChisqTest(x[, y][, theta0 = ones(length(x))/length(x)], dfadj = 0)
 
 Perform a Pearson chi-squared test (equivalent to a [`PowerDivergenceTest`](@ref)
 with ``λ = 1``).
@@ -360,7 +363,10 @@ with ``λ = 1``).
 If `y` is not given and `x` is a matrix with one row or column, or `x` is a vector, then
 a goodness-of-fit test is performed (`x` is treated as a one-dimensional contingency
 table). In this case, the hypothesis tested is whether the population probabilities equal
-those in `theta0`, or are all equal if `theta0` is not given.
+those in `theta0`, or are all equal if `theta0` is not given. `dfadj` is an adjustment for 
+the degrees of freedom for the goodness-of-fit tests.  This argument refers to the number 
+of parameters in the reference distribution (default `dfadj = 0`). This argument should be 
+used along with `theta0` argument.
 
 If `x` is a matrix with at least two rows and columns, it is taken as a two-dimensional
 contingency table. Otherwise, `x` and `y` must be vectors of the same length. The contingency
@@ -387,12 +393,12 @@ function ChisqTest(x::AbstractVector{T}, y::AbstractVector{T}, k::T) where T<:In
     PowerDivergenceTest(d, lambda=1.0)
 end
 
-ChisqTest(x::AbstractVector{T}, theta0::Vector{U} = ones(length(x))/length(x)) where {T<:Integer,U<:AbstractFloat} =
-    PowerDivergenceTest(reshape(x, length(x), 1), lambda=1.0, theta0=theta0)
+ChisqTest(x::AbstractVector{T}, theta0::Vector{U} = ones(length(x))/length(x), dfadj::T=0) where {T<:Integer,U<:AbstractFloat} =
+    PowerDivergenceTest(reshape(x, length(x), 1), lambda=1.0, theta0=theta0, dfadj=dfadj)
 
 #MultinomialLRTest
 """
-    MultinomialLRTest(x[, y][, theta0 = ones(length(x))/length(x)])
+    MultinomialLRTest(x[, y][, theta0 = ones(length(x))/length(x)], dfadj = 0)
 
 Perform a multinomial likelihood ratio test (equivalent to a [`PowerDivergenceTest`](@ref)
 with ``λ = 0``).
@@ -427,8 +433,8 @@ function MultinomialLRTest(x::AbstractVector{T}, y::AbstractVector{T}, k::T) whe
     PowerDivergenceTest(d, lambda=0.0)
 end
 
-MultinomialLRTest(x::AbstractVector{T}, theta0::Vector{U} = ones(length(x))/length(x)) where {T<:Integer,U<:AbstractFloat} =
-    PowerDivergenceTest(reshape(x, length(x), 1), lambda=0.0, theta0=theta0)
+MultinomialLRTest(x::AbstractVector{T}, theta0::Vector{U} = ones(length(x))/length(x), dfadj::T=0) where {T<:Integer,U<:AbstractFloat} =
+    PowerDivergenceTest(reshape(x, length(x), 1), lambda=0.0, theta0=theta0, dfadj=dfadj)
 
 function show_params(io::IO, x::PowerDivergenceTest, ident="")
     println(io, ident, "Sample size:        $(x.n)")

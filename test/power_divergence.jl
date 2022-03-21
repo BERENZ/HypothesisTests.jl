@@ -198,4 +198,9 @@ MultinomialLRTest(x,y,(1:3,1:3))
 d = [113997 1031298
      334453 37471]
 PowerDivergenceTest(d)
+
+# testing for dfadj
+
+
+
 end
